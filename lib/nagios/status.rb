@@ -54,6 +54,8 @@ module Nagios
       notifications = options.fetch(:notifyenabled, nil)
       action = options.fetch(:action, nil)
       withservice = options.fetch(:withservice, [])
+      ttstamp = options.fetch(:ttstamp, nil)
+      ststamp = options.fetch(:ststamp, nil)
 
       hosts = []
       searchquery = []
@@ -75,7 +77,7 @@ module Nagios
       hsts.each do |host|
         host_name = host["host_name"]
 
-        hosts << parse_command_template(action, host_name, "", host_name)
+        hosts << parse_command_template(action, host_name, "", host_name, ttstamp, ststamp)
       end
 
       hosts.uniq.sort
@@ -90,6 +92,8 @@ module Nagios
       acknowledged = options.fetch(:acknowledged, nil)
       passive = options.fetch(:passive, nil)
       current_state = options.fetch(:current_state, nil)
+      ttstamp = options.fetch(:ttstamp, nil)
+      ststamp = options.fetch(:ststamp, nil)
 
       services = []
       searchquery = []
@@ -123,7 +127,7 @@ module Nagios
         # action option to get this result
         action = "${host}:${service}" if (notifications != nil && action == nil)
 
-        services << parse_command_template(action, host_name, service_description, service_description)
+        services << parse_command_template(action, host_name, service_description, service_description, ttstamp, ststamp)
       end
 
       services.uniq.sort
@@ -183,24 +187,43 @@ module Nagios
 
     # Parses a template given with a nagios command string and populates vars
     # else return the string given in default
-    def parse_command_template(template, host, service, default)
+    def parse_command_template(template, host, service, default, ttstamp, ststamp)
       if template.nil?
         default
       else
-        template.gsub(/\$\{host\}/, host).gsub(/\$\{service\}/, service).gsub(/\$\{tstamp\}/, Time.now.to_i.to_s)
+        template.gsub(/\$\{host\}/, host).gsub(/\$\{service\}/, service).gsub(/\$\{tstamp\}/, convert_start_time(ststamp).to_s).gsub(/\$\{tlstamp\}/, convert_time(ttstamp, ststamp).to_s).gsub(/\$\{ttstamp\}/, ttstamp.to_i.to_s)
       end
+    end
+
+    def convert_time(ttstamp, ststamp)
+        if ststamp == nil
+            t = Time.now.to_i + ttstamp.to_i
+            t.to_s
+        else
+            convert_start_time(ststamp) + ttstamp.to_i
+        end
+    end
+
+    def convert_start_time(ststamp)
+        if ststamp == nil
+            Time.now.to_i.to_s
+        else
+            hour, min = ststamp.split(":")
+            now = Time.now
+            Time.new(now.year, now.month, now.day, hour, min, 0).to_i
+        end
     end
 
     # Figures out the service name from a block in a nagios status file
     def get_service_name(lines)
-      if s = lines.grep(/\s+service_description=(\S+)/).first
+      if s = lines.grep(/\s+service_description=(\w+)/).first
         if s =~ /service_description=(.+)$/
           service = $1
         else
           raise("Cant't parse service in block: #{s}")
         end
       else
-        raise("Cant't find a service in block")
+        raise("Cant't find a hostname in block")
       end
 
       service
