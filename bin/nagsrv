@@ -58,7 +58,7 @@
 require 'nagios'
 require 'optparse'
 
-statusfile = "/var/log/nagios/status.log"
+statusfile = "/platform/nagios/var/status.dat"
 listhosts = false
 withservice = []
 listservices = false
