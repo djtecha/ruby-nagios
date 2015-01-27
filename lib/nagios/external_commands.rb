@@ -140,4 +140,3 @@ module Nagios
     end # def write
   end
 end
-
