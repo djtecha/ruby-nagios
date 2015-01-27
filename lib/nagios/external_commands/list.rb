@@ -183,4 +183,3 @@ module Nagios
     }.freeze
   end
 end
-
