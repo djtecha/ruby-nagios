@@ -58,7 +58,7 @@
 require 'nagios'
 require 'optparse'
 
-statusfile = "status.log"
+statusfile = "/var/log/nagios/status.log"
 listhosts = false
 withservice = []
 listservices = false
@@ -67,6 +67,8 @@ notify = nil
 action = nil
 options = nil
 current_state = nil
+ttstamp = nil
+ststamp = nil
 
 OptionParser.new do |opts|
   opts.separator "General Options"
@@ -83,6 +85,7 @@ OptionParser.new do |opts|
   opts.on("--list-services", "List services that match certain criteria") do
     listservices = true
   end
+
 
   opts.separator ""
   opts.separator "Service and Host Selectors"
@@ -141,12 +144,17 @@ OptionParser.new do |opts|
   end
 
   opts.on("--ackknowledge", "Ackknowledge services without sending notifies") do
-    action = "[${tstamp}] ACKNOWLEDGE_SVC_PROBLEM;${host};${service};1;0;1;#{ENV['USER']};Acknowledged from CLI"
+    action = "[${tstamp}] ACKNOWLEDGE_SVC_PROBLEM;${host};${service};2;0;1;#{ENV['USER']};Acknowledged from CLI"
   end
 
   opts.on("--delete-comments", "") do
     comment_id = 1
     action = "[${tstamp}] DEL_SVC_COMMENT;${comment_id};${tstamp}"
+  end
+
+  opts.on("--downtime-on <seconds>,<15:05>", Array,  "Set downtime") do |list|
+    ttstamp, ststamp = list
+    action = "[${tstamp}] SCHEDULE_SVC_DOWNTIME;${host};${service};${tstamp};${tlstamp};1;0;${ttstamp};#{ENV['USER']};Downtime set from CLI"
   end
 
 end.parse!
@@ -170,7 +178,7 @@ if listservices && action == nil
   action = "${service}"
 end
 
-options = {:forhost => forhost, :notifyenabled => notify, :action => action, :withservice => withservice, :current_state => current_state}
+options = {:forhost => forhost, :notifyenabled => notify, :action => action, :withservice => withservice, :current_state => current_state, :ttstamp => ttstamp, :ststamp => ststamp}
 services = nagios.find_services(options)
 
 puts services.join("\n")
