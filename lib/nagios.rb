@@ -4,7 +4,8 @@ module Nagios
     :nagios_cfg_glob => ENV['NAGIOS_CFG_FILE'] || 
     [
      "/etc/nagios*/nagios.cfg", 
-     "/usr/local/nagios/etc/nagios.cfg"
+     "/usr/local/nagios/etc/nagios.cfg",
+     "/platform/nagios/etc/nagios.cfg"
     ]
   }
 
